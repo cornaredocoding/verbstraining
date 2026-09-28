@@ -215,6 +215,11 @@ function listen(myRound) {
         const alternatives = Array.from(result).map((a) => a.transcript.trim()).filter(Boolean);
         els.heard.textContent = alternatives[0] ? `Ho sentito: “${alternatives[0]}”` : "";
         if (result.isFinal) finish(myRound, alternatives);
+        else checkPartial(myRound, alternatives);
+    };
+    // tell the child when the mic is really listening: starting takes a moment after the prompt is read
+    recognition.onstart = () => {
+        if (myRound === round && current && !current.answered) els.heard.textContent = "🎤 Ti ascolto…";
     };
     // Chrome stops recognition after some silence: restart it if there is still time.
     recognition.onend = () => {
@@ -229,6 +234,22 @@ function listen(myRound) {
         }
     };
     recognition.start();
+}
+
+// Chrome waits for some silence before giving the final result: accept a right answer as soon as it is heard,
+// otherwise the child thinks nothing happened and repeats it
+async function checkPartial(myRound, alternatives) {
+    if (!alternatives.length) return;
+    try {
+        const r = await api("/api/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ verbKey: current.verbKey, direction: current.direction, spoken: alternatives }),
+        });
+        if (r.correct) finish(myRound, alternatives);
+    } catch (e) {
+        // not a problem: the final result is checked anyway
+    }
 }
 
 // selfAssessed: true/false when the judgement comes from the buttons (or "Non lo so"), null with the mic

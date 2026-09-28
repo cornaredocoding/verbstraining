@@ -28,6 +28,8 @@ data class AnswerResponse(
     val newRecord: Boolean,
 )
 
+data class CheckResponse(val correct: Boolean)
+
 data class ConfigResponse(val answerTimeoutSeconds: Int, val verbCount: Int)
 
 @RestController
@@ -59,6 +61,11 @@ class QuizController(
             streak.currentStreak, streak.bestStreak, streak.newRecord,
         )
     }
+
+    /** Checks without recording: used on partial recognition results, to stop listening as soon as the answer is right. */
+    @PostMapping("/check")
+    fun check(@RequestBody request: AnswerRequest) =
+        CheckResponse(quizService.check(request.verbKey, request.direction, request.spoken).correct)
 
     @GetMapping("/stats")
     fun stats() = statsService.summary()

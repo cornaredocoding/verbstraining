@@ -41,8 +41,12 @@ class QuizService(
     fun check(verbKey: String, direction: Direction, spoken: List<String>): AnswerResult {
         val expected = expected(verbKey, direction)
         val accepted = expected.map { normalize(it, direction) }.toSet()
-        // the whole utterance must match: saying several verbs in a row ("go come make do") is not accepted
-        val match = spoken.firstOrNull { candidate -> stripFillers(normalize(candidate, direction)) in accepted }
+        // the whole utterance must match: saying several verbs in a row ("go come make do") is not accepted,
+        // but repeating the right answer ("cry cry", when the page seemed slow) is
+        val match = spoken.firstOrNull { candidate ->
+            val n = stripFillers(normalize(candidate, direction))
+            n in accepted || accepted.any { isRepetitionOf(n, it) }
+        }
         return AnswerResult(match != null, match ?: spoken.firstOrNull(), expected)
     }
 
@@ -65,6 +69,16 @@ class QuizService(
                 .dropWhile { it in FILLERS }
                 .dropLastWhile { it in FILLERS }
             return words.joinToString(" ")
+        }
+
+        /** True if [utterance] is [answer] said two or more times, possibly with fillers in between ("to cry to cry"). */
+        fun isRepetitionOf(utterance: String, answer: String): Boolean {
+            val words = utterance.split(" ").filter { it.isNotEmpty() && it !in FILLERS }
+            val answerWords = answer.split(" ").filter { it.isNotEmpty() && it !in FILLERS }
+            return answerWords.isNotEmpty() &&
+                words.size >= 2 * answerWords.size &&
+                words.size % answerWords.size == 0 &&
+                words.chunked(answerWords.size).all { it == answerWords }
         }
 
         fun normalize(s: String, direction: Direction): String {

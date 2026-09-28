@@ -48,6 +48,17 @@ class QuizServiceTest {
     }
 
     @Test
+    fun `accepts the right answer said more than once`() {
+        val cry = repository.verbs.first { it.key == "cry" }
+        assertTrue(service.check(cry.key, Direction.IT_TO_EN, listOf("cry cry")).correct)
+        assertTrue(service.check(cry.key, Direction.IT_TO_EN, listOf("to cry to cry")).correct)
+        val getUp = repository.verbs.first { it.key == "get up" }
+        assertTrue(service.check(getUp.key, Direction.IT_TO_EN, listOf("get up get up")).correct)
+        assertFalse(service.check(cry.key, Direction.IT_TO_EN, listOf("cry cut")).correct)
+        assertFalse(service.check(getUp.key, Direction.IT_TO_EN, listOf("get up get")).correct)
+    }
+
+    @Test
     fun `accepts multi-word answers`() {
         val email = repository.verbs.first { it.english.first() == "email" }
         assertTrue(service.check(email.key, Direction.EN_TO_IT, listOf("Mandare una mail")).correct)
