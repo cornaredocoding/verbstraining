@@ -35,6 +35,26 @@ class QuizServiceTest {
     }
 
     @Test
+    fun `accepts hesitations before or after the answer`() {
+        assertTrue(service.check(become.id, Direction.IT_TO_EN, listOf("ok become")).correct)
+        assertTrue(service.check(drive.id, Direction.EN_TO_IT, listOf("ehm guidare")).correct)
+    }
+
+    @Test
+    fun `rejects a list of guesses containing the right one`() {
+        assertFalse(service.check(drive.id, Direction.EN_TO_IT, listOf("guardare guidare")).correct)
+        assertFalse(service.check(become.id, Direction.IT_TO_EN, listOf("go come become do")).correct)
+    }
+
+    @Test
+    fun `accepts multi-word answers`() {
+        val email = repository.verbs.first { it.english.first() == "email" }
+        assertTrue(service.check(email.id, Direction.EN_TO_IT, listOf("Mandare una mail")).correct)
+        val getUp = repository.verbs.first { it.english.first() == "get up" }
+        assertTrue(service.check(getUp.id, Direction.IT_TO_EN, listOf("to get up")).correct)
+    }
+
+    @Test
     fun `parses alternatives and comments`() {
         val verbs = VerbRepository.parse(listOf("# commento", "", "begin | start ; iniziare|cominciare"))
         assertEquals(1, verbs.size)

@@ -17,6 +17,7 @@ const DIRECTION_LABEL = {
 };
 const PAUSE_AFTER_CORRECT_MS = 1500;
 const PAUSE_AFTER_WRONG_MS = 2500;
+const RETRY_MS = 3000;
 
 // correct/wrong belong to the current game; streak and bestStreak come from the server (saved stats)
 const score = { correct: 0, wrong: 0, streak: 0, bestStreak: 0 };
@@ -35,10 +36,23 @@ async function init() {
         els.mic.disabled = true;
     }
     updateMicButton();
-    const cfg = await fetch("/api/config").then((r) => r.json());
-    els.timeout.value = cfg.answerTimeoutSeconds;
-    els.info.textContent = `${cfg.verbCount} verbi caricati. Tempo predefinito dal server: ${cfg.answerTimeoutSeconds}s.`;
+    try {
+        const cfg = await api("/api/config");
+        els.timeout.value = cfg.answerTimeoutSeconds;
+        els.info.textContent = `${cfg.verbCount} verbi caricati. Tempo predefinito dal server: ${cfg.answerTimeoutSeconds}s.`;
+    } catch (e) {
+        console.warn(e);
+        els.info.textContent = "Il server non risponde: ricarica la pagina quando è di nuovo attivo.";
+    }
     await loadStats();
+}
+
+// fetch that fails both on network errors and on HTTP errors (e.g. 404 after the verbs file changed)
+async function api(url, options) {
+    const r = await fetch(url, options);
+    if (!r.ok) throw new Error(`${r.status} ${url}`);
+    const text = await r.text();
+    return text ? JSON.parse(text) : null;
 }
 
 function storageGet(key) {
@@ -144,8 +158,18 @@ async function nextQuestion() {
     const params = new URLSearchParams();
     if (els.mode.value) params.set("direction", els.mode.value);
     if (current) params.set("exclude", current.verbId);
-    current = await fetch(`/api/question?${params}`).then((r) => r.json());
+    let question;
+    try {
+        question = await api(`/api/question?${params}`);
+    } catch (e) {
+        if (!running || myRound !== round) return;
+        console.warn(e);
+        showOffline();
+        nextTimer = setTimeout(nextQuestion, RETRY_MS);
+        return;
+    }
     if (!running || myRound !== round) return;
+    current = question;
 
     els.card.className = "card";
     els.direction.textContent = DIRECTION_LABEL[current.direction];
@@ -214,11 +238,22 @@ async function finish(myRound, spoken, selfAssessed = null) {
     freezeTimerBar();
     els.judge.hidden = true;
 
-    const result = await fetch("/api/answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verbId: current.verbId, direction: current.direction, spoken, selfAssessed }),
-    }).then((r) => r.json());
+    let result;
+    try {
+        result = await api("/api/answer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ verbId: current.verbId, direction: current.direction, spoken, selfAssessed }),
+        });
+    } catch (e) {
+        if (myRound !== round) return;
+        console.warn(e);
+        // the answer could not be checked or saved: show the known answers and carry on
+        els.card.className = "card";
+        els.feedback.textContent = `Il server non risponde, risposta non salvata. Era: ${formatAnswers(current.answers)}`;
+        nextTimer = setTimeout(nextQuestion, PAUSE_AFTER_WRONG_MS);
+        return;
+    }
     if (myRound !== round) return;
 
     score.streak = result.currentStreak;
@@ -252,6 +287,17 @@ const MAX_SHOWN_ANSWERS = 3;
 function formatAnswers(answers) {
     const shown = answers.slice(0, MAX_SHOWN_ANSWERS).join(" / ");
     return answers.length > MAX_SHOWN_ANSWERS ? `${shown} …` : shown;
+}
+
+function showOffline() {
+    els.card.className = "card";
+    els.direction.textContent = "Il server non risponde, riprovo tra poco…";
+    els.prompt.textContent = "⏳";
+    els.heard.textContent = "";
+    els.feedback.textContent = "";
+    els.judge.hidden = true;
+    resetTimerBar();
+    els.timerBar.style.transform = "scaleX(0)";
 }
 
 function stopListening() {
@@ -402,7 +448,13 @@ function pct(value) {
 }
 
 async function loadStats() {
-    const s = await fetch("/api/stats").then((r) => r.json());
+    let s;
+    try {
+        s = await api("/api/stats");
+    } catch (e) {
+        console.warn(e);
+        return;
+    }
     score.streak = s.currentStreak;
     score.bestStreak = s.bestStreak;
     updateScore();
@@ -443,7 +495,13 @@ async function loadStats() {
 
 $("reset").addEventListener("click", async () => {
     if (!confirm("Vuoi davvero azzerare tutte le statistiche? Non si può annullare.")) return;
-    await fetch("/api/stats", { method: "DELETE" });
+    try {
+        await api("/api/stats", { method: "DELETE" });
+    } catch (e) {
+        console.warn(e);
+        alert("Il server non risponde: statistiche non azzerate.");
+        return;
+    }
     // also reset the ✔ / ✘ counters of the current game
     score.correct = 0;
     score.wrong = 0;

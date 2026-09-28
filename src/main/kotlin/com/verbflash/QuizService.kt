@@ -41,11 +41,8 @@ class QuizService(
     fun check(verbId: Int, direction: Direction, spoken: List<String>): AnswerResult {
         val expected = expected(verbId, direction)
         val accepted = expected.map { normalize(it, direction) }.toSet()
-        val match = spoken.firstOrNull { candidate ->
-            val n = normalize(candidate, direction)
-            // recognition sometimes adds words ("to become", "ok become"): accept if a word/sequence matches
-            n in accepted || accepted.any { a -> " $n ".contains(" $a ") }
-        }
+        // the whole utterance must match: saying several verbs in a row ("go come make do") is not accepted
+        val match = spoken.firstOrNull { candidate -> stripFillers(normalize(candidate, direction)) in accepted }
         return AnswerResult(match != null, match ?: spoken.firstOrNull(), expected)
     }
 
@@ -55,6 +52,18 @@ class QuizService(
     }
 
     companion object {
+        /** Hesitations or extra words that recognition may add before/after the answer ("ok become", "ehm guidare"). */
+        private val FILLERS = setOf(
+            "to", "ok", "okay", "um", "uh", "uhm", "er", "erm", "eh", "ehm", "mh", "mmh", "allora", "beh", "cioe",
+        )
+
+        fun stripFillers(s: String): String {
+            val words = s.split(" ").filter { it.isNotEmpty() }
+                .dropWhile { it in FILLERS }
+                .dropLastWhile { it in FILLERS }
+            return words.joinToString(" ")
+        }
+
         fun normalize(s: String, direction: Direction): String {
             var n = Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD)
                 .replace(Regex("\\p{M}"), "")
