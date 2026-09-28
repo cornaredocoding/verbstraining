@@ -10,8 +10,8 @@ begin;begin|start;iniziare|cominciare
 break;break;rompere
 buy;buy;comprare|acquistare
 call;call;chiamare|telefonare
-can;can;potere|sapere|riuscire
-catch;catch;afferrare|prendere|acchiappare|catturare
+can;can;essere capace|essere in grado
+catch;catch;catturare
 choose;choose;scegliere
 clean;clean;pulire
 climb;climb;arrampicarsi|scalare|salire
@@ -69,7 +69,7 @@ play;play;giocare|suonare
 put;put;mettere
 read;read;leggere
 ride;ride;andare in bicicletta|andare in bici|cavalcare|andare a cavallo
-ring;ring;squillare|suonare
+ring;ring;squillare|suonare il campanello
 run;run;correre
 say;say|tell;dire
 see;see;vedere
