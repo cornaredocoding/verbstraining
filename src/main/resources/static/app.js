@@ -4,7 +4,7 @@ const $ = (id) => document.getElementById(id);
 const els = {
     card: $("card"), direction: $("direction"), prompt: $("prompt"), heard: $("heard"),
     feedback: $("feedback"), timerBar: $("timer-bar"),
-    start: $("start"), skip: $("skip"), stop: $("stop"),
+    start: $("start"), pause: $("pause"), skip: $("skip"), stop: $("stop"),
     timeout: $("timeout"), mode: $("mode"), info: $("info"),
     correct: $("correct"), wrong: $("wrong"), streak: $("streak"), bestStreak: $("best-streak"),
     sounds: $("sounds"), speakPrompt: $("speak-prompt"), voiceIt: $("voice-it"), voiceEn: $("voice-en"),
@@ -27,6 +27,9 @@ let round = 0;           // incremented on every question: invalidates callbacks
 let recognition = null;
 let deadlineTimer = null;
 let nextTimer = null;
+// Pause takes effect only once the current question is over (answered or timed out)
+let pauseRequested = false;
+let paused = false;
 // with the mic off an adult judges the answer with the ✔ / ✘ buttons
 let micOn = !!SpeechRecognition && storageGet("mic") !== "off";
 
@@ -165,7 +168,7 @@ async function nextQuestion() {
         if (!running || myRound !== round) return;
         console.warn(e);
         showOffline();
-        nextTimer = setTimeout(nextQuestion, RETRY_MS);
+        scheduleNext(RETRY_MS);
         return;
     }
     if (!running || myRound !== round) return;
@@ -251,7 +254,7 @@ async function finish(myRound, spoken, selfAssessed = null) {
         // the answer could not be checked or saved: show the known answers and carry on
         els.card.className = "card";
         els.feedback.textContent = `Il server non risponde, risposta non salvata. Era: ${formatAnswers(current.answers)}`;
-        nextTimer = setTimeout(nextQuestion, PAUSE_AFTER_WRONG_MS);
+        scheduleNext(PAUSE_AFTER_WRONG_MS);
         return;
     }
     if (myRound !== round) return;
@@ -279,7 +282,7 @@ async function finish(myRound, spoken, selfAssessed = null) {
         await speak(result.expected[0], current.answerLang);
         if (myRound !== round) return;
     }
-    nextTimer = setTimeout(nextQuestion, result.correct ? PAUSE_AFTER_CORRECT_MS : PAUSE_AFTER_WRONG_MS);
+    scheduleNext(result.correct ? PAUSE_AFTER_CORRECT_MS : PAUSE_AFTER_WRONG_MS);
 }
 
 // Show at most MAX_SHOWN_ANSWERS accepted answers, then "…"
@@ -335,10 +338,49 @@ function startGame() {
     if (!audioCtx && window.AudioContext) audioCtx = new AudioContext();
     audioCtx?.resume();
     running = true;
-    els.start.disabled = true;
+    paused = false;
+    pauseRequested = false;
+    // after the first start, "Inizia" is replaced by the pause/resume button
+    els.start.hidden = true;
+    els.pause.hidden = false;
     els.skip.disabled = false;
     els.stop.disabled = false;
+    updatePauseButton();
     countdown();
+}
+
+// Goes on to the next question, or pauses if a pause was requested in the meantime
+function scheduleNext(ms) {
+    nextTimer = setTimeout(() => (pauseRequested ? enterPause() : nextQuestion()), ms);
+}
+
+function enterPause() {
+    paused = true;
+    pauseRequested = false;
+    round++;
+    els.skip.disabled = true;
+    els.judge.hidden = true;
+    els.card.className = "card";
+    els.direction.textContent = "In pausa: premi “Riprendi” per continuare";
+    els.prompt.textContent = "⏸";
+    els.heard.textContent = "";
+    resetTimerBar();
+    els.timerBar.style.transform = "scaleX(0)";
+    updatePauseButton();
+}
+
+function onPauseClick() {
+    if (!running || paused) return startGame();
+    // a second click before the question ends cancels the request
+    pauseRequested = !pauseRequested;
+    updatePauseButton();
+}
+
+function updatePauseButton() {
+    const waiting = running && !paused && pauseRequested;
+    els.pause.textContent = !running || paused ? "▶ Riprendi" : waiting ? "⏳ Pausa a fine domanda" : "⏸ Pausa";
+    els.pause.title = waiting ? "Clicca di nuovo per annullare la pausa" : "";
+    els.pause.classList.toggle("pending", waiting);
 }
 
 // 3, 2, 1, Go! before the first question
@@ -360,7 +402,8 @@ async function countdown() {
     beep(990, 0.35);
     await wait(600);
     if (!running || myRound !== round) return;
-    nextQuestion();
+    if (pauseRequested) enterPause();
+    else nextQuestion();
 }
 
 function wait(ms) {
@@ -369,6 +412,8 @@ function wait(ms) {
 
 function stopGame() {
     running = false;
+    paused = false;
+    pauseRequested = false;
     round++;
     current = null;
     clearTimeout(deadlineTimer);
@@ -378,15 +423,16 @@ function stopGame() {
     els.judge.hidden = true;
     resetTimerBar();
     els.timerBar.style.transform = "scaleX(0)";
-    els.start.disabled = false;
     els.skip.disabled = true;
     els.stop.disabled = true;
+    updatePauseButton();
     els.card.className = "card";
-    els.direction.textContent = "Premi “Inizia” e rispondi a voce!";
+    els.direction.textContent = "Premi “Riprendi” e rispondi a voce!";
     els.prompt.textContent = "🎤";
 }
 
 els.start.addEventListener("click", startGame);
+els.pause.addEventListener("click", onPauseClick);
 els.stop.addEventListener("click", stopGame);
 els.skip.addEventListener("click", () => {
     if (current && !current.answered) finish(round, [], false);

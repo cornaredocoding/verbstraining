@@ -99,6 +99,8 @@ button {
 button:disabled { opacity: .4; cursor: default; }
 #skip { background: var(--muted); }
 #stop { background: var(--ko); }
+#pause { background: #b7791f; }
+#pause.pending { background: var(--muted); }
 button.toggle { background: var(--ok); }
 button.toggle.off { background: var(--muted); }
 
