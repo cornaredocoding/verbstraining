@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VerbFlash</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+    <header>
+        <h1>VerbFlash</h1>
+        <div class="score">
+            <span class="ok">✔ <b id="correct">0</b></span>
+            <span class="ko">✘ <b id="wrong">0</b></span>
+            <span class="streak" title="Risposte giuste di fila">🔥 <b id="streak">0</b></span>
+            <span class="record" title="Record di risposte giuste di fila">🏆 <b id="best-streak">0</b></span>
+            <a class="stats-link" href="#stats" title="Statistiche">📊</a>
+        </div>
+    </header>
+
+    <section id="card" class="card idle">
+        <div id="direction" class="direction">Premi “Inizia” e rispondi a voce!</div>
+        <div id="prompt" class="prompt">🎤</div>
+        <div class="timer"><div id="timer-bar"></div></div>
+        <div id="heard" class="heard"></div>
+        <div id="feedback" class="feedback"></div>
+        <div id="judge" class="judge" hidden>
+            <button id="judge-ok" class="ok">✔ Giusto</button>
+            <button id="judge-ko" class="ko">✘ Sbagliato</button>
+        </div>
+    </section>
+
+    <div class="controls">
+        <button id="start">Inizia</button>
+        <button id="skip" disabled>Non lo so</button>
+        <button id="stop" disabled>Stop</button>
+        <button id="mic" class="toggle" title="Attiva/disattiva il microfono">🎤 Microfono attivo</button>
+    </div>
+
+    <details class="settings">
+        <summary>Impostazioni</summary>
+        <label>Secondi per rispondere
+            <input id="timeout" type="number" min="2" max="60" step="1">
+        </label>
+        <label>Direzione
+            <select id="mode">
+                <option value="">Mista</option>
+                <option value="IT_TO_EN">Italiano → Inglese</option>
+                <option value="EN_TO_IT">Inglese → Italiano</option>
+            </select>
+        </label>
+        <label class="check">
+            <input id="speak-prompt" type="checkbox" checked> Leggi le parole ad alta voce
+        </label>
+        <label>Voce italiana
+            <span class="voice"><select id="voice-it"></select><button id="test-it" type="button">▶</button></span>
+        </label>
+        <label>Voce inglese
+            <span class="voice"><select id="voice-en"></select><button id="test-en" type="button">▶</button></span>
+        </label>
+        <label class="check">
+            <input id="sounds" type="checkbox" checked> Suoni per risposta giusta/sbagliata
+        </label>
+        <p id="info" class="info"></p>
+    </details>
+
+    <section id="stats" class="stats">
+        <h2>Statistiche</h2>
+        <p id="since" class="info"></p>
+
+        <section class="tiles">
+            <div class="tile"><span class="label">Risposte giuste</span><b id="percent">–</b><span id="percent-detail" class="sub"></span></div>
+            <div class="tile"><span class="label">🏆 Record di fila</span><b id="best">0</b><span id="best-at" class="sub"></span></div>
+            <div class="tile"><span class="label">🔥 Serie attuale</span><b id="current">0</b></div>
+            <div class="tile"><span class="label">Verbi imparati</span><b id="mastered">0</b><span id="mastered-detail" class="sub"></span></div>
+            <div class="tile"><span class="label">🇮🇹 → 🇬🇧</span><b id="it-en">–</b><span id="it-en-detail" class="sub"></span></div>
+            <div class="tile"><span class="label">🇬🇧 → 🇮🇹</span><b id="en-it">–</b><span id="en-it-detail" class="sub"></span></div>
+        </section>
+        <p class="info">Un verbo è “imparato” quando le ultime 3 risposte su quel verbo sono giuste.</p>
+
+        <h3>Verbi sbagliati più spesso</h3>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr><th>#</th><th>Verbo</th><th class="num">Errori</th><th class="num">Tentativi</th><th class="num">% errori</th><th>Ultime</th></tr>
+                </thead>
+                <tbody id="wrong-list"></tbody>
+            </table>
+        </div>
+        <p id="no-wrong" class="info" hidden>Nessun errore finora 🎉</p>
+
+        <div class="controls">
+            <button id="reset" class="danger">Azzera statistiche</button>
+        </div>
+    </section>
+
+    <p id="unsupported" class="unsupported" hidden>
+        Questo browser non supporta il riconoscimento vocale: si gioca col microfono spento.
+        Per usarlo serve Google Chrome (o Edge).
+    </p>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

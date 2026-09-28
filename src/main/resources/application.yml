@@ -1,0 +1,13 @@
+server:
+  port: 8080
+
+verbflash:
+  # secondi a disposizione per dire la risposta (sovrascrivibile anche da riga di comando:
+  #   --verbflash.answer-timeout-seconds=15)
+  answer-timeout-seconds: 10
+  # file dei verbi; per usarne uno esterno: file:/percorso/verbi.csv
+  verbs-file: classpath:verbs.csv
+  # probabilità che la domanda sia in italiano (e la risposta in inglese)
+  italian-to-english-ratio: 0.5
+  # file dove vengono salvate le statistiche (si azzerano dalla pagina Statistiche)
+  stats-file: data/stats.json
