@@ -537,7 +537,200 @@ async function loadStats() {
         body.appendChild(tr);
     });
     $("no-wrong").hidden = s.mostWrong.length > 0;
+
+    lastStats = s;
+    renderTrendSummary(s.trend);
+    renderDailyTable(s.daily);
+    renderChart();
 }
+
+// ---------- Trend chart ----------
+let lastStats = null;
+let chartView = storageGet("chart-view") === "daily" ? "daily" : "rolling";
+const SVG_NS = "http://www.w3.org/2000/svg";
+/** Below this change (in percentage points) the trend counts as stable. */
+const TREND_STABLE_POINTS = 5;
+
+function svgEl(tag, attrs = {}, parent = null) {
+    const el = document.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    if (parent) parent.appendChild(el);
+    return el;
+}
+
+function parseDay(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d);
+}
+
+function renderTrendSummary(trend) {
+    const box = $("trend-summary");
+    box.replaceChildren();
+    if (!trend) {
+        box.textContent = "Servono almeno 10 risposte per vedere la tendenza.";
+        return;
+    }
+    const kind = trend.delta >= TREND_STABLE_POINTS ? "up" : trend.delta <= -TREND_STABLE_POINTS ? "down" : "flat";
+    const badge = document.createElement("span");
+    badge.className = `trend-badge ${kind}`;
+    badge.textContent = { up: "↗ In miglioramento", down: "↘ In calo", flat: "→ Stabile" }[kind];
+    const sign = trend.delta > 0 ? "+" : "";
+    box.append(
+        badge,
+        `${trend.recentPercent}% giuste nelle ultime ${trend.window} risposte, ` +
+        `contro ${trend.previousPercent}% nelle ${trend.window} precedenti (${sign}${trend.delta} punti)`,
+    );
+}
+
+function renderDailyTable(daily) {
+    const body = $("daily-table");
+    body.replaceChildren();
+    for (const d of [...daily].reverse()) {
+        const tr = document.createElement("tr");
+        for (const [text, cls] of [
+            [parseDay(d.date).toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" }), ""],
+            [d.correct, "num"], [d.total, "num"], [`${d.percent}%`, "num"],
+        ]) {
+            const td = document.createElement("td");
+            td.textContent = text;
+            if (cls) td.className = cls;
+            tr.appendChild(td);
+        }
+        body.appendChild(tr);
+    }
+}
+
+/** Points to plot for the current view: { value (0-100), label (x axis), tip (tooltip detail) } */
+function chartPoints(s) {
+    if (chartView === "daily") {
+        return s.daily.map((d) => {
+            const day = parseDay(d.date);
+            return {
+                value: d.percent,
+                label: day.toLocaleDateString("it-IT", { day: "numeric", month: "short" }),
+                tip: `${day.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" })} · ${d.correct} giuste su ${d.total}`,
+            };
+        });
+    }
+    // rolling[i] averages answers first+i .. first+i+window-1 (numbered from 1 over the whole history)
+    const span = Math.min(s.answersRecorded, s.rolling.length + s.rollingWindow - 1);
+    const first = s.answersRecorded - span + 1;
+    return s.rolling.map((value, i) => {
+        const last = first + i + s.rollingWindow - 1;
+        return { value, label: `n° ${last}`, tip: `risposte ${last - s.rollingWindow + 1}–${last}` };
+    });
+}
+
+function renderChart() {
+    const box = $("chart");
+    box.replaceChildren();
+    for (const b of document.querySelectorAll(".segmented button")) {
+        b.setAttribute("aria-pressed", String(b.dataset.view === chartView));
+    }
+    $("chart-note").textContent = chartView === "daily"
+        ? "Percentuale di risposte giuste in ogni giorno di gioco."
+        : `Ogni punto è la percentuale di risposte giuste su ${lastStats?.rollingWindow ?? 20} risposte di fila (ultime 200 risposte).`;
+    if (!lastStats) return;
+
+    const pts = chartPoints(lastStats);
+    if (!pts.length) {
+        const p = document.createElement("p");
+        p.className = "chart-empty";
+        p.textContent = chartView === "daily"
+            ? "Ancora nessuna risposta registrata."
+            : `Servono almeno ${lastStats.rollingWindow} risposte per disegnare l'andamento.`;
+        box.appendChild(p);
+        return;
+    }
+
+    const W = Math.max(box.clientWidth, 280);
+    const H = 220;
+    const m = { l: 40, r: 44, t: 14, b: 28 };
+    const iw = W - m.l - m.r;
+    const ih = H - m.t - m.b;
+    const x = (i) => m.l + (pts.length === 1 ? iw / 2 : (i * iw) / (pts.length - 1));
+    const y = (v) => m.t + ih * (1 - v / 100);
+
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, tabindex: "0", role: "img" }, box);
+    const lastPt = pts[pts.length - 1];
+    svg.setAttribute("aria-label", `Andamento: ${pts.length} punti, ultimo valore ${lastPt.value}%. Usa le frecce per scorrere.`);
+
+    for (const v of [0, 25, 50, 75, 100]) {
+        svgEl("line", { class: "grid", x1: m.l, x2: W - m.r, y1: y(v), y2: y(v) }, svg);
+        svgEl("text", { class: "tick", x: m.l - 8, y: y(v) + 4, "text-anchor": "end" }, svg).textContent = `${v}%`;
+    }
+
+    // x labels: first, last and (if there is room) the middle one
+    const xLabels = pts.length === 1 ? [0] : pts.length < 3 ? [0, pts.length - 1] : [0, Math.floor((pts.length - 1) / 2), pts.length - 1];
+    for (const i of xLabels) {
+        const anchor = pts.length === 1 ? "middle" : i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle";
+        svgEl("text", { class: "tick", x: x(i), y: H - 6, "text-anchor": anchor }, svg).textContent = pts[i].label;
+    }
+
+    if (pts.length > 1) {
+        const linePath = pts.map((p, i) => `${i ? "L" : "M"}${x(i)},${y(p.value)}`).join(" ");
+        svgEl("path", { class: "area", d: `${linePath} L${x(pts.length - 1)},${y(0)} L${x(0)},${y(0)} Z` }, svg);
+        svgEl("path", { class: "line", d: linePath }, svg);
+    }
+    const n = pts.length - 1;
+    svgEl("circle", { class: "dot", cx: x(n), cy: y(lastPt.value), r: 4 }, svg);
+    svgEl("text", { class: "end-label", x: x(n) + 8, y: y(lastPt.value) + 4 }, svg).textContent = `${lastPt.value}%`;
+
+    // hover / keyboard layer: crosshair snapping to the nearest point + tooltip
+    const crosshair = svgEl("line", { class: "crosshair", y1: m.t, y2: m.t + ih, visibility: "hidden" }, svg);
+    const hoverDot = svgEl("circle", { class: "dot", r: 5, visibility: "hidden" }, svg);
+    const overlay = svgEl("rect", { x: m.l, y: 0, width: iw, height: H, fill: "transparent" }, svg);
+    const tooltip = document.createElement("div");
+    tooltip.className = "chart-tooltip";
+    tooltip.hidden = true;
+    box.appendChild(tooltip);
+
+    let active = n;
+    const show = (i) => {
+        active = Math.max(0, Math.min(n, i));
+        const p = pts[active];
+        const scale = box.clientWidth / W;
+        for (const attr of ["x1", "x2"]) crosshair.setAttribute(attr, x(active));
+        hoverDot.setAttribute("cx", x(active));
+        hoverDot.setAttribute("cy", y(p.value));
+        crosshair.setAttribute("visibility", "visible");
+        hoverDot.setAttribute("visibility", "visible");
+        const value = document.createElement("b");
+        value.textContent = `${p.value}%`;
+        tooltip.replaceChildren(value, p.tip);
+        tooltip.style.left = `${Math.min(Math.max(x(active) * scale, 70), box.clientWidth - 70)}px`;
+        tooltip.style.top = `${y(p.value) * scale}px`;
+        tooltip.hidden = false;
+    };
+    const hide = () => {
+        crosshair.setAttribute("visibility", "hidden");
+        hoverDot.setAttribute("visibility", "hidden");
+        tooltip.hidden = true;
+    };
+    overlay.addEventListener("pointermove", (e) => {
+        const rect = svg.getBoundingClientRect();
+        const px = ((e.clientX - rect.left) * W) / rect.width;
+        show(n === 0 ? 0 : Math.round(((px - m.l) / iw) * n));
+    });
+    overlay.addEventListener("pointerleave", hide);
+    svg.addEventListener("focus", () => show(active));
+    svg.addEventListener("blur", hide);
+    svg.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft") show(active - 1);
+        else if (e.key === "ArrowRight") show(active + 1);
+        else return;
+        e.preventDefault();
+    });
+}
+
+for (const b of document.querySelectorAll(".segmented button")) {
+    b.addEventListener("click", () => {
+        chartView = b.dataset.view;
+        storageSet("chart-view", chartView);
+        renderChart();
+    });
+}
+window.addEventListener("resize", renderChart);
 
 $("reset").addEventListener("click", async () => {
     if (!confirm("Vuoi davvero azzerare tutte le statistiche? Non si può annullare.")) return;

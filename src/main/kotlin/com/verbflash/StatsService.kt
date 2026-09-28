@@ -7,12 +7,24 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 /** How many recent answers we keep for each verb. */
 private const val RECENT_SIZE = 5
 
 /** A verb is "mastered" when its last MASTERED_RUN answers are all correct. */
 private const val MASTERED_RUN = 3
+
+/** The trend compares the last TREND_WINDOW answers with the TREND_WINDOW before them. */
+private const val TREND_WINDOW = 20
+
+/** Below this many answers there is no meaningful trend yet. */
+private const val TREND_MIN_ANSWERS = 10
+
+/** The rolling chart shows the last ROLLING_SPAN answers, each point averaging ROLLING_WINDOW answers. */
+private const val ROLLING_SPAN = 200
+private const val ROLLING_WINDOW = 20
 
 class Counter(var total: Int = 0, var correct: Int = 0) {
     fun add(ok: Boolean) {
@@ -28,6 +40,14 @@ class VerbStats(
     val recent: MutableList<Boolean> = mutableListOf(),
 )
 
+/** One answer, as stored in the history used for the trend. */
+class AnswerRecord(
+    val at: Instant = Instant.now(),
+    val verbKey: String = "",
+    val direction: Direction = Direction.IT_TO_EN,
+    val correct: Boolean = false,
+)
+
 /** Data stored on file. Verbs are stored by their stable key, so they survive changes to the translations. */
 class StatsData(
     var since: Instant = Instant.now(),
@@ -37,6 +57,8 @@ class StatsData(
     var bestStreak: Int = 0,
     var bestStreakAt: Instant? = null,
     val verbs: MutableMap<String, VerbStats> = mutableMapOf(),
+    /** Every answer, oldest first: the source of the trend. */
+    val answers: MutableList<AnswerRecord> = mutableListOf(),
 )
 
 data class StreakInfo(val currentStreak: Int, val bestStreak: Int, val newRecord: Boolean)
@@ -52,6 +74,11 @@ data class WrongVerb(
     val recent: List<Boolean>,
 )
 
+data class DailyPoint(val date: LocalDate, val total: Int, val correct: Int, val percent: Int)
+
+/** Accuracy of the last [window] answers compared with the [window] before them. */
+data class Trend(val window: Int, val recentPercent: Int, val previousPercent: Int, val delta: Int)
+
 data class StatsSummary(
     val since: Instant,
     val total: Int,
@@ -65,6 +92,15 @@ data class StatsSummary(
     val verbsSeen: Int,
     val verbsMastered: Int,
     val mostWrong: List<WrongVerb>,
+    /** Null until there are enough answers. */
+    val trend: Trend?,
+    /** Accuracy per day (local time), oldest first. */
+    val daily: List<DailyPoint>,
+    /** Rolling accuracy over the last answers: each value averages [rollingWindow] consecutive answers. */
+    val rolling: List<Int>,
+    val rollingWindow: Int,
+    /** Answers in the history (may be fewer than [total] for stats recorded before the history existed). */
+    val answersRecorded: Int,
 )
 
 @Service
@@ -74,6 +110,7 @@ class StatsService(
     properties: VerbflashProperties,
 ) {
     private val file: Path = Path.of(properties.statsFile)
+    private val zone: ZoneId = ZoneId.systemDefault()
 
     // The file is re-read on every operation (no in-memory copy) so it stays the single source of truth,
     // even if two instances of the app are accidentally running or the file is edited by hand.
@@ -89,6 +126,7 @@ class StatsService(
         if (!correct) verbStats.wrong++
         verbStats.recent.add(correct)
         while (verbStats.recent.size > RECENT_SIZE) verbStats.recent.removeAt(0)
+        data.answers.add(AnswerRecord(Instant.now(), verb.key, direction, correct))
 
         var newRecord = false
         if (correct) {
@@ -143,8 +181,37 @@ class StatsService(
                 s.recent.size >= MASTERED_RUN && s.recent.takeLast(MASTERED_RUN).all { it }
             },
             mostWrong = mostWrong,
+            trend = trend(data.answers),
+            daily = daily(data.answers),
+            rolling = rolling(data.answers),
+            rollingWindow = ROLLING_WINDOW,
+            answersRecorded = data.answers.size,
         )
     }
+
+    private fun trend(answers: List<AnswerRecord>): Trend? {
+        if (answers.size < TREND_MIN_ANSWERS) return null
+        // with few answers, split what there is in two halves
+        val window = minOf(TREND_WINDOW, answers.size / 2)
+        val recent = answers.takeLast(window)
+        val previous = answers.dropLast(window).takeLast(window)
+        val recentPercent = percent(recent.count { it.correct }, recent.size)!!
+        val previousPercent = percent(previous.count { it.correct }, previous.size)!!
+        return Trend(window, recentPercent, previousPercent, recentPercent - previousPercent)
+    }
+
+    private fun daily(answers: List<AnswerRecord>): List<DailyPoint> =
+        answers.groupBy { LocalDate.ofInstant(it.at, zone) }
+            .toSortedMap()
+            .map { (date, day) ->
+                val correct = day.count { it.correct }
+                DailyPoint(date, day.size, correct, percent(correct, day.size)!!)
+            }
+
+    private fun rolling(answers: List<AnswerRecord>): List<Int> =
+        answers.takeLast(ROLLING_SPAN)
+            .map { it.correct }
+            .windowed(ROLLING_WINDOW) { w -> percent(w.count { it }, w.size)!! }
 
     @Synchronized
     fun reset() {

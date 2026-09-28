@@ -70,6 +70,26 @@
         <h2>Statistiche</h2>
         <p id="since" class="info"></p>
 
+        <section class="trend-card">
+            <div class="trend-head">
+                <h3>Andamento delle risposte giuste</h3>
+                <div class="segmented" role="group" aria-label="Vista del grafico">
+                    <button type="button" data-view="rolling">Risposta per risposta</button>
+                    <button type="button" data-view="daily">Per giorno</button>
+                </div>
+            </div>
+            <p id="trend-summary" class="trend-summary"></p>
+            <div id="chart" class="chart"></div>
+            <p id="chart-note" class="info"></p>
+            <details class="chart-table">
+                <summary>Dati per giorno</summary>
+                <table>
+                    <thead><tr><th>Giorno</th><th class="num">Giuste</th><th class="num">Risposte</th><th class="num">%</th></tr></thead>
+                    <tbody id="daily-table"></tbody>
+                </table>
+            </details>
+        </section>
+
         <section class="tiles">
             <div class="tile"><span class="label">Risposte giuste</span><b id="percent">–</b><span id="percent-detail" class="sub"></span></div>
             <div class="tile"><span class="label">🏆 Record di fila</span><b id="best">0</b><span id="best-at" class="sub"></span></div>

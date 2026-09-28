@@ -56,6 +56,35 @@ class StatsServiceTest {
     }
 
     @Test
+    fun `computes trend, daily accuracy and rolling accuracy`() {
+        val stats = service()
+        assertEquals(null, stats.summary().trend)
+
+        // 40 answers: first 20 all wrong, last 20 all right -> improving
+        repeat(20) { stats.record(go, Direction.IT_TO_EN, false) }
+        repeat(20) { stats.record(be, Direction.IT_TO_EN, true) }
+
+        val summary = stats.summary()
+        val trend = summary.trend!!
+        assertEquals(20, trend.window)
+        assertEquals(100, trend.recentPercent)
+        assertEquals(0, trend.previousPercent)
+        assertEquals(100, trend.delta)
+
+        assertEquals(1, summary.daily.size)
+        assertEquals(40, summary.daily[0].total)
+        assertEquals(50, summary.daily[0].percent)
+
+        // 40 answers, window of 20 -> 21 points, from 0% up to 100%
+        assertEquals(21, summary.rolling.size)
+        assertEquals(0, summary.rolling.first())
+        assertEquals(100, summary.rolling.last())
+
+        stats.reset()
+        assertTrue(stats.summary().daily.isEmpty())
+    }
+
+    @Test
     fun `stats survive a restart and can be reset`() {
         service().record(be, Direction.IT_TO_EN, false)
         val reloaded = service()

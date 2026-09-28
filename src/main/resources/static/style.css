@@ -157,3 +157,47 @@ td .it { color: var(--muted); }
 .dot.ko { background: var(--ko); }
 
 button.danger { background: var(--ko); }
+
+/* ---------- Trend chart ---------- */
+.trend-card {
+    margin-top: 16px;
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .05);
+}
+.trend-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.trend-head h3 { margin: 0; }
+
+.segmented { display: inline-flex; background: var(--bg); border-radius: 10px; padding: 3px; }
+.segmented button {
+    background: transparent; color: var(--muted);
+    font-size: .9rem; padding: 6px 12px; border-radius: 8px;
+}
+.segmented button[aria-pressed="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+
+.trend-summary { margin: 12px 0 4px; line-height: 1.5; }
+.trend-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 600; margin-right: 6px; }
+.trend-badge.up { background: #dcf3e5; color: #17693a; }
+.trend-badge.down { background: #fbe1e1; color: #9b2c2c; }
+.trend-badge.flat { background: #eceef1; color: #4b5563; }
+
+.chart { position: relative; margin-top: 8px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart svg:focus { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+.chart .grid { stroke: #e9eaee; stroke-width: 1; }
+.chart .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart .area { fill: var(--accent); opacity: .1; }
+.chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .dot { fill: var(--accent); stroke: var(--card); stroke-width: 2; }
+.chart .end-label { fill: var(--text); font-size: 12px; font-weight: 600; }
+.chart .crosshair { stroke: var(--muted); stroke-width: 1; }
+.chart .chart-empty { color: var(--muted); text-align: center; padding: 40px 0; margin: 0; }
+.chart-tooltip {
+    position: absolute; pointer-events: none; background: var(--text); color: #fff;
+    padding: 6px 10px; border-radius: 8px; font-size: .85rem; white-space: nowrap;
+    transform: translate(-50%, calc(-100% - 12px));
+}
+.chart-tooltip b { font-size: 1rem; margin-right: 6px; }
+.chart-table { margin-top: 8px; }
+.chart-table summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
