@@ -5,8 +5,9 @@ import org.springframework.stereotype.Component
 
 /**
  * Reads the verbs from a text file. Format of each line:
- *   english;italian
- * Multiple accepted forms are separated by "|", e.g.:  get|obtain;ottenere|prendere
+ *   key;english;italian
+ * Multiple accepted forms are separated by "|", e.g.:  get;get|obtain;ottenere|prendere
+ * The key must be unique and never change: statistics are stored by key.
  * Blank lines and lines starting with "#" are ignored.
  */
 @Component
@@ -20,16 +21,24 @@ class VerbRepository(resourceLoader: ResourceLoader, properties: VerbflashProper
         require(verbs.isNotEmpty()) { "No verbs found in ${properties.verbsFile}" }
     }
 
-    fun findById(id: Int): Verb? = verbs.getOrNull(id)
+    private val byKey: Map<String, Verb> = verbs.associateBy { it.key }
+
+    fun findByKey(key: String): Verb? = byKey[key]
 
     companion object {
         fun parse(lines: List<String>): List<Verb> =
             lines.map { it.trim() }
                 .filter { it.isNotEmpty() && !it.startsWith("#") }
-                .mapIndexed { index, line ->
-                    val parts = line.split(";")
-                    require(parts.size == 2) { "Invalid line (expected 'english;italian'): $line" }
-                    Verb(index, splitAlternatives(parts[0]), splitAlternatives(parts[1]))
+                .map { line ->
+                    val parts = line.split(";").map { it.trim() }
+                    require(parts.size == 3 && parts.all { it.isNotEmpty() }) {
+                        "Invalid line (expected 'key;english;italian'): $line"
+                    }
+                    Verb(parts[0], splitAlternatives(parts[1]), splitAlternatives(parts[2]))
+                }
+                .also { verbs ->
+                    val duplicates = verbs.groupBy { it.key }.filterValues { it.size > 1 }.keys
+                    require(duplicates.isEmpty()) { "Duplicate verb keys: $duplicates" }
                 }
 
         private fun splitAlternatives(s: String) = s.split("|").map { it.trim() }.filter { it.isNotEmpty() }

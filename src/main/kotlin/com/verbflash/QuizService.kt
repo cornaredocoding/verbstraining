@@ -5,7 +5,7 @@ import java.text.Normalizer
 import kotlin.random.Random
 
 data class Question(
-    val verbId: Int,
+    val verbKey: String,
     val direction: Direction,
     val prompt: String,
     val promptLang: String,
@@ -27,29 +27,32 @@ class QuizService(
     private val properties: VerbflashProperties,
 ) {
 
-    fun nextQuestion(direction: Direction? = null, excludeVerbId: Int? = null): Question {
-        val candidates = repository.verbs.filter { it.id != excludeVerbId }.ifEmpty { repository.verbs }
+    fun nextQuestion(direction: Direction? = null, excludeVerbKey: String? = null): Question {
+        val candidates = repository.verbs.filter { it.key != excludeVerbKey }.ifEmpty { repository.verbs }
         val verb = candidates.random()
         val dir = direction
             ?: if (Random.nextDouble() < properties.italianToEnglishRatio) Direction.IT_TO_EN else Direction.EN_TO_IT
         val prompt = if (dir == Direction.IT_TO_EN) verb.italian.first() else verb.english.first()
         val answers = if (dir == Direction.IT_TO_EN) verb.english else verb.italian
-        return Question(verb.id, dir, prompt, dir.promptLang, dir.answerLang, properties.answerTimeoutSeconds, answers)
+        return Question(verb.key, dir, prompt, dir.promptLang, dir.answerLang, properties.answerTimeoutSeconds, answers)
     }
 
     /** [spoken] holds the alternatives returned by speech recognition: one correct match is enough. */
-    fun check(verbId: Int, direction: Direction, spoken: List<String>): AnswerResult {
-        val expected = expected(verbId, direction)
+    fun check(verbKey: String, direction: Direction, spoken: List<String>): AnswerResult {
+        val expected = expected(verbKey, direction)
         val accepted = expected.map { normalize(it, direction) }.toSet()
         // the whole utterance must match: saying several verbs in a row ("go come make do") is not accepted
         val match = spoken.firstOrNull { candidate -> stripFillers(normalize(candidate, direction)) in accepted }
         return AnswerResult(match != null, match ?: spoken.firstOrNull(), expected)
     }
 
-    fun expected(verbId: Int, direction: Direction): List<String> {
-        val verb = repository.findById(verbId) ?: throw NoSuchElementException("Verb $verbId does not exist")
+    fun expected(verbKey: String, direction: Direction): List<String> {
+        val verb = findVerb(verbKey)
         return if (direction == Direction.IT_TO_EN) verb.english else verb.italian
     }
+
+    fun findVerb(verbKey: String): Verb =
+        repository.findByKey(verbKey) ?: throw NoSuchElementException("Verb '$verbKey' does not exist")
 
     companion object {
         /** Hesitations or extra words that recognition may add before/after the answer ("ok become", "ehm guidare"). */

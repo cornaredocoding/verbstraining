@@ -157,7 +157,7 @@ async function nextQuestion() {
     const myRound = ++round;
     const params = new URLSearchParams();
     if (els.mode.value) params.set("direction", els.mode.value);
-    if (current) params.set("exclude", current.verbId);
+    if (current) params.set("exclude", current.verbKey);
     let question;
     try {
         question = await api(`/api/question?${params}`);
@@ -243,7 +243,7 @@ async function finish(myRound, spoken, selfAssessed = null) {
         result = await api("/api/answer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ verbId: current.verbId, direction: current.direction, spoken, selfAssessed }),
+            body: JSON.stringify({ verbKey: current.verbKey, direction: current.direction, spoken, selfAssessed }),
         });
     } catch (e) {
         if (myRound !== round) return;

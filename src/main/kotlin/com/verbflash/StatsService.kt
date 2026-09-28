@@ -28,7 +28,7 @@ class VerbStats(
     val recent: MutableList<Boolean> = mutableListOf(),
 )
 
-/** Data stored on file. Verbs are keyed by their main English form, so they survive changes to the verbs file. */
+/** Data stored on file. Verbs are stored by their stable key, so they survive changes to the translations. */
 class StatsData(
     var since: Instant = Instant.now(),
     val overall: Counter = Counter(),
@@ -84,7 +84,7 @@ class StatsService(
         data.overall.add(correct)
         data.byDirection.getOrPut(direction) { Counter() }.add(correct)
 
-        val verbStats = data.verbs.getOrPut(key(verb)) { VerbStats() }
+        val verbStats = data.verbs.getOrPut(verb.key) { VerbStats() }
         verbStats.attempts++
         if (!correct) verbStats.wrong++
         verbStats.recent.add(correct)
@@ -108,7 +108,7 @@ class StatsService(
     @Synchronized
     fun summary(): StatsSummary {
         val data = load()
-        val verbsByKey = repository.verbs.associateBy(::key)
+        val verbsByKey = repository.verbs.associateBy { it.key }
         val mostWrong = data.verbs
             .filter { (k, s) -> s.wrong > 0 && k in verbsByKey }
             .map { (k, s) ->
@@ -150,8 +150,6 @@ class StatsService(
     fun reset() {
         save(StatsData())
     }
-
-    private fun key(verb: Verb) = verb.english.first()
 
     private fun percent(part: Int, total: Int): Int? =
         if (total == 0) null else Math.round(part * 100.0 / total).toInt()

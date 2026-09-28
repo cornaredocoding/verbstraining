@@ -1,106 +1,107 @@
-# english;italian  -  multiple accepted answers separated by "|"
+# key;english;italian  -  multiple accepted answers separated by "|"
+# The key identifies the verb in the statistics: never change it, even if you change the translations.
 # The first form on each side is the one shown as the prompt.
-add;aggiungere|sommare
-answer;rispondere
-ask;chiedere|domandare
-be;essere|stare
-become;diventare
-begin|start;iniziare|cominciare
-break;rompere
-buy;comprare|acquistare
-call;chiamare|telefonare
-can;potere|sapere|riuscire
-catch;afferrare|prendere|acchiappare|catturare
-choose;scegliere
-clean;pulire
-climb;arrampicarsi|scalare|salire
-close|shut;chiudere
-colour|color;colorare
-come;venire
-complete;completare|finire
-cook;cucinare
-cross;attraversare
-cry;piangere
-cut;tagliare
-dance;ballare|danzare
-do|make;fare
-draw;disegnare
-dream;sognare
-drink;bere
-drive;guidare
-eat;mangiare
-enjoy;divertirsi|godersi|godere
-email|e-mail;mandare una email|mandare una mail|mandare un email|mandare una e-mail|inviare una email|inviare una mail|scrivere una email|scrivere una mail
-fall;cadere
-feed;dare da mangiare|nutrire
-feel;sentirsi|sentire|provare
-find;trovare
-fly;volare
-follow;seguire
-get;ottenere|prendere|ricevere
-get up;alzarsi
-get dressed;vestirsi
-give;dare
-go;andare
-grow;crescere|coltivare
-have;avere
-hear;sentire|udire
-help;aiutare
-invite;invitare
-jump;saltare
-keep;tenere|mantenere|conservare
-know;sapere|conoscere
-leave;partire|lasciare|andarsene|andare via
-learn;imparare
-let;permettere|lasciare
-like;piacere
-live;vivere|abitare
-look|watch;guardare
-lose;perdere
-make|do;fare|costruire
-mean;significare|voler dire|intendere
-meet;incontrare|conoscere
-move;muovere|muoversi|spostare|spostarsi|traslocare
-need;avere bisogno|aver bisogno|servire
-order;ordinare
-pay;pagare
-play;giocare|suonare
-put;mettere
-read;leggere
-ride;andare in bicicletta|andare in bici|cavalcare|andare a cavallo
-ring;squillare|suonare
-run;correre
-say|tell;dire
-see;vedere
-seem;sembrare
-sell;vendere
-send;mandare|inviare|spedire
-show;mostrare|far vedere
-shut|close;chiudere
-sing;cantare
-sit;sedersi|sedere|stare seduto
-sleep;dormire
-speak|talk;parlare
-spend;spendere|trascorrere|passare
-stand;stare in piedi
-start|begin;iniziare|cominciare
-swim;nuotare
-surf;fare surf|surfare|navigare
-take;prendere|portare
-talk|speak;parlare|chiacchierare
-teach;insegnare
-tell;raccontare|dire
-think;pensare|credere
-try;provare|tentare
-turn;girare|girarsi|voltare|voltarsi
-understand;capire|comprendere
-use;usare|utilizzare
-wake up|wake;svegliarsi|svegliare
-walk;camminare|passeggiare
-want;volere
-wash;lavare|lavarsi
-watch|look;guardare|osservare
-wear;indossare|mettersi|portare
-win;vincere
-work;lavorare|funzionare
-write;scrivere
+add;add;aggiungere|sommare
+answer;answer;rispondere
+ask;ask;chiedere|domandare
+be;be;essere|stare
+become;become;diventare
+begin;begin|start;iniziare|cominciare
+break;break;rompere
+buy;buy;comprare|acquistare
+call;call;chiamare|telefonare
+can;can;potere|sapere|riuscire
+catch;catch;afferrare|prendere|acchiappare|catturare
+choose;choose;scegliere
+clean;clean;pulire
+climb;climb;arrampicarsi|scalare|salire
+close;close|shut;chiudere
+colour;colour|color;colorare
+come;come;venire
+complete;complete;completare|finire
+cook;cook;cucinare
+cross;cross;attraversare
+cry;cry;piangere
+cut;cut;tagliare
+dance;dance;ballare|danzare
+do;do|make;fare
+draw;draw;disegnare
+dream;dream;sognare
+drink;drink;bere
+drive;drive;guidare
+eat;eat;mangiare
+enjoy;enjoy;divertirsi|godersi|godere
+email;email|e-mail;mandare una email|mandare una mail|mandare un email|mandare una e-mail|inviare una email|inviare una mail|scrivere una email|scrivere una mail
+fall;fall;cadere
+feed;feed;dare da mangiare|nutrire
+feel;feel;sentirsi|sentire|provare
+find;find;trovare
+fly;fly;volare
+follow;follow;seguire
+get;get;ottenere|prendere|ricevere
+get up;get up;alzarsi
+get dressed;get dressed;vestirsi
+give;give;dare
+go;go;andare
+grow;grow;crescere|coltivare
+have;have;avere
+hear;hear;sentire|udire
+help;help;aiutare
+invite;invite;invitare
+jump;jump;saltare
+keep;keep;tenere|mantenere|conservare
+know;know;sapere|conoscere
+leave;leave;partire|lasciare|andarsene|andare via
+learn;learn;imparare
+let;let;permettere|lasciare
+like;like;piacere
+live;live;vivere|abitare
+look;look|watch;guardare
+lose;lose;perdere
+make;make|do;fare|costruire
+mean;mean;significare|voler dire|intendere
+meet;meet;incontrare|conoscere
+move;move;muovere|muoversi|spostare|spostarsi|traslocare
+need;need;avere bisogno|aver bisogno|servire
+order;order;ordinare
+pay;pay;pagare
+play;play;giocare|suonare
+put;put;mettere
+read;read;leggere
+ride;ride;andare in bicicletta|andare in bici|cavalcare|andare a cavallo
+ring;ring;squillare|suonare
+run;run;correre
+say;say|tell;dire
+see;see;vedere
+seem;seem;sembrare
+sell;sell;vendere
+send;send;mandare|inviare|spedire
+show;show;mostrare|far vedere
+shut;shut|close;chiudere
+sing;sing;cantare
+sit;sit;sedersi|sedere|stare seduto
+sleep;sleep;dormire
+speak;speak|talk;parlare
+spend;spend;spendere|trascorrere|passare
+stand;stand;stare in piedi
+start;start|begin;iniziare|cominciare
+swim;swim;nuotare
+surf;surf;fare surf|surfare|navigare
+take;take;prendere|portare
+talk;talk|speak;parlare|chiacchierare
+teach;teach;insegnare
+tell;tell;raccontare|dire
+think;think;pensare|credere
+try;try;provare|tentare
+turn;turn;girare|girarsi|voltare|voltarsi
+understand;understand;capire|comprendere
+use;use;usare|utilizzare
+wake up;wake up|wake;svegliarsi|svegliare
+walk;walk;camminare|passeggiare
+want;want;volere
+wash;wash;lavare|lavarsi
+watch;watch|look;guardare|osservare
+wear;wear;indossare|mettersi|portare
+win;win;vincere
+work;work;lavorare|funzionare
+write;write;scrivere

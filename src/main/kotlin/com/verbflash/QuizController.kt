@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 data class AnswerRequest(
-    val verbId: Int,
+    val verbKey: String,
     val direction: Direction,
     val spoken: List<String> = emptyList(),
     /** Set when the mic is off: an adult judges the answer with the buttons. */
@@ -45,15 +45,15 @@ class QuizController(
     @GetMapping("/question")
     fun question(
         @RequestParam(required = false) direction: Direction?,
-        @RequestParam(required = false) exclude: Int?,
+        @RequestParam(required = false) exclude: String?,
     ) = quizService.nextQuestion(direction, exclude)
 
     @PostMapping("/answer")
     fun answer(@RequestBody request: AnswerRequest): AnswerResponse {
         val result = request.selfAssessed
-            ?.let { AnswerResult(it, null, quizService.expected(request.verbId, request.direction)) }
-            ?: quizService.check(request.verbId, request.direction, request.spoken)
-        val streak = statsService.record(repository.findById(request.verbId)!!, request.direction, result.correct)
+            ?.let { AnswerResult(it, null, quizService.expected(request.verbKey, request.direction)) }
+            ?: quizService.check(request.verbKey, request.direction, request.spoken)
+        val streak = statsService.record(quizService.findVerb(request.verbKey), request.direction, result.correct)
         return AnswerResponse(
             result.correct, result.heard, result.expected,
             streak.currentStreak, streak.bestStreak, streak.newRecord,

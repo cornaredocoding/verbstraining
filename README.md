@@ -23,6 +23,9 @@ They can also be passed on the command line:
 
 ## Verb list
 
-One verb per line, `english;italian`; multiple accepted answers separated by `|`:
+One verb per line, `key;english;italian`; multiple accepted answers separated by `|`:
 
-    get;ottenere|prendere|ricevere
+    get;get;ottenere|prendere|ricevere
+
+The key identifies the verb in the statistics: it must be unique and should never change,
+so translations can be edited freely without losing the verb's history.

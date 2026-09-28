@@ -44,6 +44,18 @@ class StatsServiceTest {
     }
 
     @Test
+    fun `stats follow the key even when the translations change`() {
+        service().record(be, Direction.IT_TO_EN, false)
+
+        // same key, different main English form: e.g. the line was edited in the verbs file
+        val renamed = Verb(be.key, listOf("to be"), be.italian)
+        service().record(renamed, Direction.IT_TO_EN, false)
+
+        val wrong = service().summary().mostWrong.single()
+        assertEquals(2, wrong.wrong)
+    }
+
+    @Test
     fun `stats survive a restart and can be reset`() {
         service().record(be, Direction.IT_TO_EN, false)
         val reloaded = service()
