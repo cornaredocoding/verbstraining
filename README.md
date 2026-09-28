@@ -1,27 +1,28 @@
 # VerbFlash
 
-Giochino per imparare i verbi inglesi a voce. Spring Boot (Kotlin) + pagina web statica.
+A tiny game to learn English verbs by speaking them out loud. Spring Boot (Kotlin) + a static web page.
 
-## Avvio
+## Running
 
     mvn spring-boot:run
 
-poi apri **http://localhost:8080** con **Google Chrome** (serve il riconoscimento vocale del browser) e consenti il microfono.
+then open **http://localhost:8080** in **Google Chrome** (the browser's speech recognition is required) and allow microphone access.
 
-## Configurazione (`src/main/resources/application.yml`)
+## Configuration (`src/main/resources/application.yml`)
 
-| proprietà | default | significato |
+| property | default | meaning |
 |---|---|---|
-| `verbflash.answer-timeout-seconds` | 10 | secondi per rispondere (modificabile anche dalle impostazioni nella pagina) |
-| `verbflash.verbs-file` | `classpath:verbs.csv` | file dei verbi, es. `file:/Users/me/verbi.csv` |
-| `verbflash.italian-to-english-ratio` | 0.5 | probabilità di domanda in italiano |
+| `verbflash.answer-timeout-seconds` | 10 | seconds to answer (can also be changed from the settings on the page) |
+| `verbflash.verbs-file` | `classpath:verbs.csv` | verbs file, e.g. `file:/Users/me/verbs.csv` |
+| `verbflash.italian-to-english-ratio` | 0.5 | probability of an Italian prompt |
+| `verbflash.stats-file` | `data/stats.json` | file where statistics are stored |
 
-Si possono passare anche da riga di comando:
+They can also be passed on the command line:
 
     mvn spring-boot:run -Dspring-boot.run.arguments="--verbflash.answer-timeout-seconds=15"
 
-## Lista dei verbi
+## Verb list
 
-Una riga per verbo, `inglese;italiano`; più risposte accettate separate da `|`:
+One verb per line, `english;italian`; multiple accepted answers separated by `|`:
 
     get;ottenere|prendere|ricevere

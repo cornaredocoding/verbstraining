@@ -4,10 +4,10 @@ import org.springframework.core.io.ResourceLoader
 import org.springframework.stereotype.Component
 
 /**
- * Legge i verbi da un file di testo. Formato di ogni riga:
- *   inglese;italiano
- * Più forme accettate si separano con "|", es:  get|obtain;ottenere|prendere
- * Righe vuote e righe che iniziano con "#" vengono ignorate.
+ * Reads the verbs from a text file. Format of each line:
+ *   english;italian
+ * Multiple accepted forms are separated by "|", e.g.:  get|obtain;ottenere|prendere
+ * Blank lines and lines starting with "#" are ignored.
  */
 @Component
 class VerbRepository(resourceLoader: ResourceLoader, properties: VerbflashProperties) {
@@ -17,7 +17,7 @@ class VerbRepository(resourceLoader: ResourceLoader, properties: VerbflashProper
         .useLines { lines -> parse(lines.toList()) }
 
     init {
-        require(verbs.isNotEmpty()) { "Nessun verbo trovato in ${properties.verbsFile}" }
+        require(verbs.isNotEmpty()) { "No verbs found in ${properties.verbsFile}" }
     }
 
     fun findById(id: Int): Verb? = verbs.getOrNull(id)
@@ -28,7 +28,7 @@ class VerbRepository(resourceLoader: ResourceLoader, properties: VerbflashProper
                 .filter { it.isNotEmpty() && !it.startsWith("#") }
                 .mapIndexed { index, line ->
                     val parts = line.split(";")
-                    require(parts.size == 2) { "Riga non valida (atteso 'inglese;italiano'): $line" }
+                    require(parts.size == 2) { "Invalid line (expected 'english;italian'): $line" }
                     Verb(index, splitAlternatives(parts[0]), splitAlternatives(parts[1]))
                 }
 

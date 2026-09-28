@@ -18,15 +18,15 @@ const DIRECTION_LABEL = {
 const PAUSE_AFTER_CORRECT_MS = 1500;
 const PAUSE_AFTER_WRONG_MS = 2500;
 
-// correct/wrong sono della partita in corso; streak e bestStreak arrivano dal server (statistiche salvate)
+// correct/wrong belong to the current game; streak and bestStreak come from the server (saved stats)
 const score = { correct: 0, wrong: 0, streak: 0, bestStreak: 0 };
 let running = false;
-let current = null;      // domanda in corso
-let round = 0;           // incrementato a ogni domanda: invalida callback di round vecchi
+let current = null;      // current question
+let round = 0;           // incremented on every question: invalidates callbacks from older rounds
 let recognition = null;
 let deadlineTimer = null;
 let nextTimer = null;
-// col microfono spento la risposta la giudica un adulto con i pulsanti ✔ / ✘
+// with the mic off an adult judges the answer with the ✔ / ✘ buttons
 let micOn = !!SpeechRecognition && storageGet("mic") !== "off";
 
 async function init() {
@@ -48,10 +48,10 @@ function storageSet(key, value) {
     try { localStorage.setItem(key, value); } catch (_) { /* ignore */ }
 }
 
-// ---------- Voce ----------
-// Chrome usa la voce di default (inglese) se non gliene diamo una esplicitamente: scegliamo la migliore per lingua.
+// ---------- Voice ----------
+// Chrome uses the default (English) voice unless we set one explicitly: pick the best one for each language.
 const VOICE_SELECTS = { it: els.voiceIt, en: els.voiceEn };
-// voci "buffe" o di bassa qualità di macOS da evitare
+// novelty or low-quality macOS voices to avoid
 const BAD_VOICES = /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy|grandma|grandpa|eddy|flo|reed|rocko|sandy|shelley/i;
 
 function voiceScore(v) {
@@ -93,14 +93,14 @@ function speak(text, lang) {
         u.lang = lang;
         u.voice = voiceFor(lang);
         u.rate = 0.9;
-        // a volte Chrome non chiama onend: non restiamo bloccati
+        // Chrome sometimes never fires onend: don't get stuck
         const safety = setTimeout(resolve, 5000);
         u.onend = u.onerror = () => { clearTimeout(safety); resolve(); };
         speechSynthesis.speak(u);
     });
 }
 
-// ---------- Suoni ----------
+// ---------- Sounds ----------
 let audioCtx = null;
 
 function tone(freq, start, duration, type, volume) {
@@ -124,10 +124,10 @@ function beep(freq, duration) {
 function playSound(correct) {
     if (!els.sounds.checked || !audioCtx) return;
     if (correct) {
-        // arpeggio allegro Do-Mi-Sol-Do
+        // cheerful C-E-G-C arpeggio
         [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.09, 0.35, "triangle", 0.25));
     } else {
-        // due note discendenti "bwoo-bwoo"
+        // two descending notes "bwoo-bwoo"
         tone(311.13, 0, 0.25, "sawtooth", 0.12);
         tone(233.08, 0.22, 0.45, "sawtooth", 0.12);
     }
@@ -155,7 +155,7 @@ async function nextQuestion() {
     els.judge.hidden = true;
     resetTimerBar();
 
-    // il tempo parte dopo la lettura, così il microfono non sente la voce del computer
+    // the timer starts after the prompt is read, so the mic doesn't pick up the computer's voice
     if (els.speakPrompt.checked) await speak(current.prompt, current.promptLang);
     if (!running || myRound !== round || current.answered) return;
 
@@ -169,7 +169,7 @@ async function nextQuestion() {
 function onDeadline(myRound) {
     if (myRound !== round || !current || current.answered) return;
     if (micOn) return finish(myRound, []);
-    // microfono spento: mostriamo la risposta e aspettiamo il giudizio ✔ / ✘
+    // mic off: show the answer and wait for the ✔ / ✘ judgement
     current.revealed = true;
     els.feedback.textContent = `La risposta era: ${formatAnswers(current.answers)} — com'è andata?`;
     els.judge.hidden = false;
@@ -189,10 +189,10 @@ function listen(myRound) {
         els.heard.textContent = alternatives[0] ? `Ho sentito: “${alternatives[0]}”` : "";
         if (result.isFinal) finish(myRound, alternatives);
     };
-    // Chrome chiude il riconoscimento dopo un po' di silenzio: se c'è ancora tempo, riparte.
+    // Chrome stops recognition after some silence: restart it if there is still time.
     recognition.onend = () => {
         if (running && micOn && myRound === round && current && !current.answered) {
-            try { recognition.start(); } catch (_) { /* già avviato */ }
+            try { recognition.start(); } catch (_) { /* already started */ }
         }
     };
     recognition.onerror = (e) => {
@@ -204,7 +204,7 @@ function listen(myRound) {
     recognition.start();
 }
 
-// selfAssessed: true/false quando il giudizio arriva dai pulsanti (o da "Non lo so"), null col microfono
+// selfAssessed: true/false when the judgement comes from the buttons (or "Non lo so"), null with the mic
 async function finish(myRound, spoken, selfAssessed = null) {
     if (myRound !== round || !current || current.answered) return;
     current.answered = true;
@@ -237,8 +237,8 @@ async function finish(myRound, spoken, selfAssessed = null) {
     playSound(result.correct);
     loadStats();
     if (!result.correct && els.speakPrompt.checked) {
-        // dopo il suono, pronuncia la risposta giusta; la domanda successiva parte solo quando ha finito,
-        // così il microfono non sente la voce del computer
+        // after the sound, say the correct answer; the next question starts only once it has finished,
+        // so the mic doesn't pick up the computer's voice
         await wait(700);
         if (myRound !== round) return;
         await speak(result.expected[0], current.answerLang);
@@ -247,7 +247,7 @@ async function finish(myRound, spoken, selfAssessed = null) {
     nextTimer = setTimeout(nextQuestion, result.correct ? PAUSE_AFTER_CORRECT_MS : PAUSE_AFTER_WRONG_MS);
 }
 
-// Mostra al massimo MAX_SHOWN_ANSWERS risposte accettate, poi "…"
+// Show at most MAX_SHOWN_ANSWERS accepted answers, then "…"
 const MAX_SHOWN_ANSWERS = 3;
 function formatAnswers(answers) {
     const shown = answers.slice(0, MAX_SHOWN_ANSWERS).join(" / ");
@@ -267,7 +267,7 @@ function resetTimerBar() {
     els.timerBar.style.transform = "scaleX(1)";
 }
 function startTimerBar(seconds) {
-    void els.timerBar.offsetWidth; // forza il reflow per far ripartire l'animazione
+    void els.timerBar.offsetWidth; // force a reflow so the animation restarts
     els.timerBar.style.transition = `transform ${seconds}s linear`;
     els.timerBar.style.transform = "scaleX(0)";
 }
@@ -285,7 +285,7 @@ function updateScore() {
 }
 
 function startGame() {
-    // l'AudioContext va creato dopo un click dell'utente, altrimenti il browser lo blocca
+    // the AudioContext must be created after a user click, otherwise the browser blocks it
     if (!audioCtx && window.AudioContext) audioCtx = new AudioContext();
     audioCtx?.resume();
     running = true;
@@ -295,7 +295,7 @@ function startGame() {
     countdown();
 }
 
-// 3, 2, 1, Via! prima della prima domanda
+// 3, 2, 1, Go! before the first question
 async function countdown() {
     const myRound = ++round;
     els.card.className = "card countdown";
@@ -349,13 +349,13 @@ els.judgeOk.addEventListener("click", () => finish(round, [], true));
 els.judgeKo.addEventListener("click", () => finish(round, [], false));
 els.mic.addEventListener("click", () => setMic(!micOn));
 
-// ---------- Microfono on/off ----------
+// ---------- Mic on/off ----------
 function updateMicButton() {
     els.mic.textContent = micOn ? "🎤 Microfono attivo" : "🔇 Microfono spento";
     els.mic.classList.toggle("off", !micOn);
 }
 
-// Si può cambiare anche durante una domanda: vale subito
+// Can be toggled during a question too: takes effect immediately
 function setMic(on) {
     micOn = on && !!SpeechRecognition;
     storageSet("mic", micOn ? "on" : "off");
@@ -372,7 +372,7 @@ function setMic(on) {
     }
 }
 
-// ---------- Impostazioni voce ----------
+// ---------- Voice settings ----------
 els.speakPrompt.checked = storageGet("speak-prompt") !== "off";
 els.speakPrompt.addEventListener("change", () => storageSet("speak-prompt", els.speakPrompt.checked ? "on" : "off"));
 if (window.speechSynthesis) {
@@ -392,7 +392,7 @@ els.sounds.addEventListener("change", () => {
     playSound(true);
 });
 
-// ---------- Statistiche ----------
+// ---------- Statistics ----------
 function formatDate(iso) {
     return iso ? new Date(iso).toLocaleString("it-IT", { dateStyle: "medium", timeStyle: "short" }) : "";
 }
@@ -444,7 +444,7 @@ async function loadStats() {
 $("reset").addEventListener("click", async () => {
     if (!confirm("Vuoi davvero azzerare tutte le statistiche? Non si può annullare.")) return;
     await fetch("/api/stats", { method: "DELETE" });
-    // azzera anche i contatori ✔ / ✘ della partita in corso
+    // also reset the ✔ / ✘ counters of the current game
     score.correct = 0;
     score.wrong = 0;
     loadStats();

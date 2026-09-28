@@ -10,7 +10,7 @@
 
 * { box-sizing: border-box; }
 
-/* hidden deve vincere anche su regole come display: flex */
+/* hidden must win even over rules like display: flex */
 [hidden] { display: none !important; }
 
 body {
@@ -119,7 +119,7 @@ button.toggle.off { background: var(--muted); }
 
 .unsupported { color: var(--ko); text-align: center; font-weight: 600; }
 
-/* ---------- Statistiche ---------- */
+/* ---------- Statistics ---------- */
 .stats { margin-top: 40px; scroll-margin-top: 16px; }
 h2 { margin: 0 0 4px; font-size: 1.5rem; }
 h3 { margin-top: 28px; font-size: 1.2rem; }

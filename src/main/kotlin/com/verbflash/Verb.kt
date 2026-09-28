@@ -1,6 +1,6 @@
 package com.verbflash
 
-/** Un verbo con tutte le forme accettate in inglese e in italiano (la prima è quella "principale"). */
+/** A verb with all its accepted English and Italian forms (the first one is the "main" form). */
 data class Verb(
     val id: Int,
     val english: List<String>,

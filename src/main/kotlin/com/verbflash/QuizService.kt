@@ -11,7 +11,7 @@ data class Question(
     val promptLang: String,
     val answerLang: String,
     val timeoutSeconds: Int,
-    /** Risposte accettate: servono per mostrarle quando il microfono è spento e il giudizio lo dà un adulto. */
+    /** Accepted answers: shown when the mic is off and an adult judges the answer. */
     val answers: List<String>,
 )
 
@@ -37,20 +37,20 @@ class QuizService(
         return Question(verb.id, dir, prompt, dir.promptLang, dir.answerLang, properties.answerTimeoutSeconds, answers)
     }
 
-    /** [spoken] contiene le alternative restituite dal riconoscimento vocale: basta che una sia giusta. */
+    /** [spoken] holds the alternatives returned by speech recognition: one correct match is enough. */
     fun check(verbId: Int, direction: Direction, spoken: List<String>): AnswerResult {
         val expected = expected(verbId, direction)
         val accepted = expected.map { normalize(it, direction) }.toSet()
         val match = spoken.firstOrNull { candidate ->
             val n = normalize(candidate, direction)
-            // il riconoscimento a volte aggiunge parole ("to become", "ok become"): accettiamo se una parola/sequenza combacia
+            // recognition sometimes adds words ("to become", "ok become"): accept if a word/sequence matches
             n in accepted || accepted.any { a -> " $n ".contains(" $a ") }
         }
         return AnswerResult(match != null, match ?: spoken.firstOrNull(), expected)
     }
 
     fun expected(verbId: Int, direction: Direction): List<String> {
-        val verb = repository.findById(verbId) ?: throw NoSuchElementException("Verbo $verbId inesistente")
+        val verb = repository.findById(verbId) ?: throw NoSuchElementException("Verb $verbId does not exist")
         return if (direction == Direction.IT_TO_EN) verb.english else verb.italian
     }
 

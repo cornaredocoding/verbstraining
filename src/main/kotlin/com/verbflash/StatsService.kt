@@ -8,10 +8,10 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.time.Instant
 
-/** Quante risposte recenti teniamo per ogni verbo. */
+/** How many recent answers we keep for each verb. */
 private const val RECENT_SIZE = 5
 
-/** Un verbo è "imparato" se le ultime MASTERED_RUN risposte sono tutte giuste. */
+/** A verb is "mastered" when its last MASTERED_RUN answers are all correct. */
 private const val MASTERED_RUN = 3
 
 class Counter(var total: Int = 0, var correct: Int = 0) {
@@ -24,11 +24,11 @@ class Counter(var total: Int = 0, var correct: Int = 0) {
 class VerbStats(
     var attempts: Int = 0,
     var wrong: Int = 0,
-    /** Ultime risposte, dalla più vecchia alla più recente. */
+    /** Latest answers, oldest first. */
     val recent: MutableList<Boolean> = mutableListOf(),
 )
 
-/** Dati salvati su file. I verbi sono indicizzati per forma inglese principale, così sopravvivono a modifiche del file dei verbi. */
+/** Data stored on file. Verbs are keyed by their main English form, so they survive changes to the verbs file. */
 class StatsData(
     var since: Instant = Instant.now(),
     val overall: Counter = Counter(),
@@ -75,8 +75,8 @@ class StatsService(
 ) {
     private val file: Path = Path.of(properties.statsFile)
 
-    // Il file viene riletto a ogni operazione (niente copia in memoria): così resta l'unica fonte di verità,
-    // anche se per sbaglio girano due istanze dell'app o il file viene modificato a mano.
+    // The file is re-read on every operation (no in-memory copy) so it stays the single source of truth,
+    // even if two instances of the app are accidentally running or the file is edited by hand.
 
     @Synchronized
     fun record(verb: Verb, direction: Direction, correct: Boolean): StreakInfo {
@@ -161,7 +161,7 @@ class StatsService(
 
     private fun save(data: StatsData) {
         file.toAbsolutePath().parent?.let { Files.createDirectories(it) }
-        // scrittura atomica: prima su un file temporaneo, poi rinomina
+        // atomic write: first to a temp file, then rename
         val tmp = file.resolveSibling("${file.fileName}.tmp")
         objectMapper.writerWithDefaultPrettyPrinter().writeValue(tmp.toFile(), data)
         Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)

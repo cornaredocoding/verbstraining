@@ -4,12 +4,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "verbflash")
 data class VerbflashProperties(
-    /** Secondi a disposizione per pronunciare la risposta. */
+    /** Seconds available to say the answer. */
     val answerTimeoutSeconds: Int = 10,
-    /** File dei verbi: "classpath:verbs.csv" oppure "file:/percorso/verbi.csv". */
+    /** Verbs file: "classpath:verbs.csv" or "file:/path/to/verbs.csv". */
     val verbsFile: String = "classpath:verbs.csv",
-    /** Probabilità (0..1) che la domanda sia in italiano (risposta in inglese). */
+    /** Probability (0..1) that the prompt is in Italian (answer in English). */
     val italianToEnglishRatio: Double = 0.5,
-    /** File JSON dove vengono salvate le statistiche. */
+    /** JSON file where the statistics are stored. */
     val statsFile: String = "data/stats.json",
 )

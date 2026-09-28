@@ -1,5 +1,5 @@
-# inglese;italiano  -  più risposte accettate separate da "|"
-# La prima forma di ogni lato è quella mostrata come domanda.
+# english;italian  -  multiple accepted answers separated by "|"
+# The first form on each side is the one shown as the prompt.
 add;aggiungere|sommare
 answer;rispondere
 ask;chiedere|domandare

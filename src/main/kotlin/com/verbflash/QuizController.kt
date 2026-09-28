@@ -15,7 +15,7 @@ data class AnswerRequest(
     val verbId: Int,
     val direction: Direction,
     val spoken: List<String> = emptyList(),
-    /** Valorizzato quando il microfono è spento: il giudizio lo dà un adulto con i pulsanti. */
+    /** Set when the mic is off: an adult judges the answer with the buttons. */
     val selfAssessed: Boolean? = null,
 )
 

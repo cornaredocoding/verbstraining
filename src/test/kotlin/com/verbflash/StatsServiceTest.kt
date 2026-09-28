@@ -24,7 +24,7 @@ class StatsServiceTest {
     )
 
     @Test
-    fun `calcola percentuali, serie record e classifica degli errori`() {
+    fun `computes percentages, best streak and most-missed ranking`() {
         val stats = service()
         stats.record(be, Direction.IT_TO_EN, true)
         stats.record(be, Direction.IT_TO_EN, true)
@@ -44,7 +44,7 @@ class StatsServiceTest {
     }
 
     @Test
-    fun `le statistiche sopravvivono al riavvio e si possono azzerare`() {
+    fun `stats survive a restart and can be reset`() {
         service().record(be, Direction.IT_TO_EN, false)
         val reloaded = service()
         assertEquals(1, reloaded.summary().total)
@@ -54,7 +54,7 @@ class StatsServiceTest {
     }
 
     @Test
-    fun `due istanze sullo stesso file vedono lo stesso azzeramento`() {
+    fun `two instances on the same file see the same reset`() {
         val first = service()
         val second = service()
         first.record(be, Direction.IT_TO_EN, true)
